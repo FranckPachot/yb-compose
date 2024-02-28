@@ -11,7 +11,13 @@ services:
     then # first node -----------------^
      yugabyted start --background=false --cloud_location=$$cloud_location --tserver_flags="${TSERVER_FLAGS}" $$other_flags
     else # other nodes
-     until postgres/bin/pg_isready -h ${COMPOSE_PROJECT_NAME}-yb-1 ; do sleep 1 ; done | uniq &&
+     # must be sure that node 1 to join is up
+     until postgres/bin/pg_isready -h ${COMPOSE_PROJECT_NAME}-yb-1 ; do sleep 1 ; done | uniq
+     if host ${COMPOSE_PROJECT_NAME}-yb-3 | grep " $(hostname -i)"
+     then
+      # node 3 must be sure that node 2 is up (because it will change the RF)
+      until postgres/bin/pg_isready -h ${COMPOSE_PROJECT_NAME}-yb-2 ; do sleep 1 ; done | uniq
+     fi
      yugabyted start --background=false --join=${COMPOSE_PROJECT_NAME}-yb-1 --cloud_location=$$cloud_location $$other_flags
     fi
    '
