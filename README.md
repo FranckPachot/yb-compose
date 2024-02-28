@@ -18,3 +18,6 @@ docker compose up yb -d --scale yb=1 --no-recreate
 docker compose up yb -d --scale yb=3 --no-recreate
 docker compose up yb -d --scale yb=6 --no-recreate
 ```
+
+You can scale down, but one node at a time, waiting 15 minutes, as that's the default to re-create replicas. 
+(Or blacklist the nodes before and wait for rebalance completion)
