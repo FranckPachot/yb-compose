@@ -11,9 +11,10 @@ Connect to first node:
 docker compose exec -it yb ysqlsh -h yb-compose-yb-1
 ```
 
-Start a RF1 and then add 2 more nodes:
+Start a RF1 and then add 2 more nodes to be RF3 then add more nodes:
 
 ```
-docker compose up yb -d --scale yb=1
-docker compose up yb -d --scale yb=3
+docker compose up yb -d --scale yb=1 --no-recreate
+docker compose up yb -d --scale yb=3 --no-recreate
+docker compose up yb -d --scale yb=6 --no-recreate
 ```
