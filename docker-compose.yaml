@@ -3,24 +3,35 @@ services:
   image: yugabytedb/yugabyte
   command: |
    bash -xc '
+    other_flags="--tserver_flags=${TSERVER_FLAGS} --master_flags=${MASTER_FLAGS}"
     # start in 3 zones -------------------------------------------------v
     cloud_location="cloud.region.zone$(( $(hostname -i | cut -d. -f4) % 3 ))"
     # add --join only if it is the fist start and not the first node
     if host ${COMPOSE_PROJECT_NAME}-yb-1 | grep " $(hostname -i)" || [ -f /root/var/conf/yugabyted.conf ]
     then # first node -----------------^
-     yugabyted start --background=false --cloud_location=$$cloud_location
+     yugabyted start --background=false --cloud_location=$$cloud_location --tserver_flags="${TSERVER_FLAGS}" $$other_flags
     else # other nodes
      until postgres/bin/pg_isready -h ${COMPOSE_PROJECT_NAME}-yb-1 ; do sleep 1 ; done | uniq &&
-     yugabyted start --background=false --join=${COMPOSE_PROJECT_NAME}-yb-1 --cloud_location=$$cloud_location
+     yugabyted start --background=false --join=${COMPOSE_PROJECT_NAME}-yb-1 --cloud_location=$$cloud_location $$other_flags
     fi
    '
   deploy:
    replicas: 3
    restart_policy: 
     condition: on-failure
+  healthcheck:
+      interval: 5s
+      timeout: 3s
+      test: postgres/bin/pg_isready -h $$(hostname)
   ports:
    - "7000-7030:7000"
    - "9000-9030:9000"
    - "5433-5463:5433"
    - "9042-9072:9042"
    - "15433-15463:15433"
+ rf3isready:
+  image: yugabytedb/yugabyte
+  command: postgres/bin/pg_isready -h ${COMPOSE_PROJECT_NAME}-yb-3
+  depends_on:
+   yb:
+    condition: service_healthy
