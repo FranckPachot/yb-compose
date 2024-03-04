@@ -1,56 +1,99 @@
 services:
+
  yb:
-  image: yugabytedb/yugabyte
-  command: |
-   bash -xc '
-    other_flags="--tserver_flags=${TSERVER_FLAGS} --master_flags=${MASTER_FLAGS}"
-    # start in 3 zones -------------------------------------------------v
-    cloud_location="cloud.region.zone$(( $(hostname -i | cut -d. -f4) % 3 ))"
-    # add --join only if it is the fist start and not the first node
-    if host ${COMPOSE_PROJECT_NAME}-yb-1 | grep " $(hostname -i)" || [ -f /root/var/conf/yugabyted.conf ]
-    then # first node -----------------^
-     yugabyted start --background=false --cloud_location=$$cloud_location --tserver_flags="${TSERVER_FLAGS}" $$other_flags
-    else # other nodes
-     # must be sure that node 1 to join is up
-     until postgres/bin/pg_isready -h ${COMPOSE_PROJECT_NAME}-yb-1 ; do sleep 1 ; done | uniq
-     if host ${COMPOSE_PROJECT_NAME}-yb-3 | grep " $(hostname -i)"
-     then
-      # node 3 must be sure that node 2 is up (because it will change the RF)
-      until postgres/bin/pg_isready -h ${COMPOSE_PROJECT_NAME}-yb-2 ; do sleep 1 ; done | uniq
-     fi
-     yugabyted start --background=false --join=${COMPOSE_PROJECT_NAME}-yb-1 --cloud_location=$$cloud_location $$other_flags
-    fi
-   '
-  deploy:
-   replicas: 3
-   restart_policy: 
-    condition: on-failure
-  healthcheck:
-      interval: 5s
-      timeout: 3s
-      test: postgres/bin/pg_isready -h $$(hostname)
-  expose:
-   - "7000:7000"
-   - "9000:9000"
-   - "5433:5433"
-   - "9042:9042"
-   - "15433:15433"
-  ports:
-   - "5433-5463:5433"
-   - "9042-9072:9042"
- rf3isready:
-  image: yugabytedb/yugabyte
-  command: postgres/bin/pg_isready -h ${COMPOSE_PROJECT_NAME}-yb-3
+   build: .
+   environment:
+    - yugabyted_join=${COMPOSE_PROJECT_NAME}-yb-1
+    - yugabyted_cloud_location=${COMPOSE_PROJECT_NAME}.yb.az
+    - tserver_flags=yb_enable_read_committed_isolation=true
+   deploy:
+    replicas: 3
+    restart_policy:
+     condition: on-failure
+   ports:
+   - "7000-7009:7000"
+   - "9000-9009:9000"
+   - "5430-5439:5433"
+   - "15430-15439:15433"
+   - "6430-6439:6432"
+
+ psql:
+  image: postgres
+  environment:
+    - PGUSER=yugabyte
+    - PGPASSWORD=yugabyte
+    - PGDATABASE=yugabyte
+  command: psql -h ${COMPOSE_PROJECT_NAME}-yb-1 -p 5433 -c " select * from yb_servers() "
   depends_on:
    yb:
     condition: service_healthy
- ui-7000:
-  image: caddy:2-alpine
-  command: caddy reverse-proxy --from :7000 --to yb:7000
+
+ sqlpad:
+  image: sqlpad/sqlpad:5
   ports:
-   - 7000:7000
- ui-15433:
-  image: caddy:2-alpine
-  command: caddy reverse-proxy --from :15433 --to yb:15433
-  ports:
-   - 15433:15433
+          - '8080:3000'
+  depends_on:
+   yb:
+    condition: service_healthy
+  volumes:
+          - ./sqlpad:/var/lib/sqlpad
+  environment:
+          SQLPAD_AUTH_DISABLED: true
+          SQLPAD_ADMIN: 'admin'
+          SQLPAD_ADMIN_PASSWORD: 'admin'
+          SQLPAD_APP_LOG_LEVEL: debug
+          SQLPAD_WEB_LOG_LEVEL: warn
+          SQLPAD_SEED_DATA_PATH: /etc/sqlpad/seed-data
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-1__name: ${COMPOSE_PROJECT_NAME}-yb-1
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-1__driver: postgres
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-1__host: ${COMPOSE_PROJECT_NAME}-yb-1
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-1__port: 5433
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-1__database: yugabyte
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-1__username: yugabyte
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-1__password: yugabyte
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-1__multiStatementTransactionEnabled: 'true'
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-1__idleTimeoutSeconds: 86400
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-2__name: ${COMPOSE_PROJECT_NAME}-yb-2
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-2__driver: postgres
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-2__host: ${COMPOSE_PROJECT_NAME}-yb-2
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-2__port: 5433
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-2__database: yugabyte
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-2__username: yugabyte
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-2__password: yugabyte
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-2__multiStatementTransactionEnabled: 'true'
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-2__idleTimeoutSeconds: 86400
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-3__name: ${COMPOSE_PROJECT_NAME}-yb-3
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-3__driver: postgres
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-3__host: ${COMPOSE_PROJECT_NAME}-yb-3
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-3__port: 5433
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-3__database: yugabyte
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-3__username: yugabyte
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-3__password: yugabyte
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-3__multiStatementTransactionEnabled: 'true'
+          SQLPAD_CONNECTIONS__${COMPOSE_PROJECT_NAME}-yb-3__idleTimeoutSeconds: 86400
+#
+ prometheus:
+    image: prom/prometheus:v2.37.9
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+    ports:
+      - 9090:9090
+    user: "0:0"
+    volumes:
+      - .:/etc/prometheus:ro
+    restart: unless-stopped
+    depends_on:
+      - yb
+
+ grafana:
+    image: grafana/grafana-oss:latest
+    ports:
+      - '3000:3000'
+    user: "0:0"
+    volumes:
+      #- ./config:/etc/grafanax:ro
+      #- ./config:/var/lib/grafana
+      - ./grafana:/var/lib/grafana
+    restart: unless-stopped
+    depends_on:
+      - yb

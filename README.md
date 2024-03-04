@@ -1,24 +1,21 @@
-test
-# yblab
-Small Docker Compose to start a YugabyteDB lab with docker compose
+# yugabyted-compose
+Docker compose to start YugabyteDB with yugabyted
 
-Start a RF3:
+Example to start a RF=3 lab:
 ```
-docker compose up -d
+docker compose up -d --scale yb=3
+docker compose logs psql
 ```
+On port 8080 you have SQLPad to connect to any node
 
-Connect to first node:
-```
-docker compose exec -it yb ysqlsh -h yb-compose-yb-1
-```
+You can run it on Gitpod free VM:
 
-Start a RF1 and then add 2 more nodes to be RF3 then add more nodes:
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/FranckPachot/yugabyted-compose)
 
-```
-docker compose up yb -d --scale yb=1 --no-recreate
-docker compose up yb -d --scale yb=3 --no-recreate
-docker compose up yb -d --scale yb=6 --no-recreate
-```
+Once initialized, open the port 8080 in your browser:
 
-You can scale down, but one node at a time, waiting 15 minutes, as that's the default to re-create replicas. 
-(Or blacklist the nodes before and wait for rebalance completion)
+![image](https://github.com/FranckPachot/yugabyted-compose/assets/33070466/11c6cc31-fc1f-4518-bbaf-e98b1a976787)
+
+and run your queries:
+
+![image](https://github.com/FranckPachot/yugabyted-compose/assets/33070466/c09cab08-6da7-4318-a787-3f14c3853d79)
