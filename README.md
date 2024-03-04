@@ -1,3 +1,4 @@
+test
 # yblab
 Small Docker Compose to start a YugabyteDB lab with docker compose
 
