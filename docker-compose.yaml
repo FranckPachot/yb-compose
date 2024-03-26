@@ -27,7 +27,9 @@ services:
     condition: on-failure
   healthcheck:
       interval: 5s
-      timeout: 3s
+      timeout:  5s
+      retries:  12
+      start_period: 60s
       test: postgres/bin/pg_isready -h $$(hostname)
   expose:
    - "7000:7000"
@@ -54,3 +56,17 @@ services:
   command: caddy reverse-proxy --from :15433 --to yb:15433
   ports:
    - 15433:15433
+ tpcc:
+  image: yugabytedb/ybbench:latest
+  command: |
+   bash -xc '
+   cd /home/centos/code/tpcc &&
+   [ -f .created ] || ./tpccbenchmark --create=true  --nodes=yb $TPCC_FLAGS | sed -e "s/^/create:  /" && touch .created
+   [ -f .loaded  ] || ./tpccbenchmark --load=true    --nodes=yb $TPCC_FLAGS | sed -e "s/^/load:    /" && touch .loaded
+   ./tpccbenchmark --execute=true --nodes=yb $TPCC_FLAGS  --dir=/tmp/tpcc-output | sed -e "s/^/execute: /" 
+   '
+  volumes: 
+   - ./tpcc-output:/tmp/tpcc-output
+  depends_on:
+   yb:
+    condition: service_healthy
