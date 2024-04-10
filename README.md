@@ -21,3 +21,13 @@ docker compose up yb -d --scale yb=6 --no-recreate
 
 You can scale down, but one node at a time, waiting 15 minutes, as that's the default to re-create replicas. 
 (Or blacklist the nodes before and wait for rebalance completion)
+
+You can get the environment to connect to the exposed ports with:
+```
+export PGLOADBALANCEHOSTS=random
+export PGHOST=$( docker compose ps yb --format json | jq -r '[ .[].Publishers[]|select(.TargetPort==5433)| "localhost"   ] | join(",")' )
+export PGPORT=$( docker compose ps yb --format json | jq -r '[ .[].Publishers[]|select(.TargetPort==5433)|.PublishedPort ] | join(",")' )
+export PGUSER=yugabyte
+export PGDATABASE=yugabyte
+set | grep ^PG
+```
