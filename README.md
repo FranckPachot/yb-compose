@@ -31,3 +31,9 @@ export PGUSER=yugabyte
 export PGDATABASE=yugabyte
 set | grep ^PG
 ```
+
+## Network Delay
+The NET_DELAY_MS variable adds network latency between the nodes. For example:
+```
+docker compose --env-file=.env.delay up -d
+```
