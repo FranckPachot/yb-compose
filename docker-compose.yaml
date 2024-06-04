@@ -6,8 +6,9 @@ services:
     other_flags="--tserver_flags=${TSERVER_FLAGS:-} --master_flags=${MASTER_FLAGS:-}"
     # add network delay to add to simulate distance between nodes
     ( [ ${NET_DELAY_MS:-0} -gt 0 ] && dnf -y install iproute-tc >/dev/null && tc qdisc add dev eth0 root netem delay ${NET_DELAY_MS:-0}ms ) &
-    # start in 3 zones names (but it is the same network) --------------v
-    cloud_location="cloud.region.zone$(( $(hostname -i | cut -d. -f4) % 3 ))"
+    # start in 3 zones names (but it is the same network) --------------iv
+    h=$$(hostname -i) ; c=0 ; for i in $$( seq 1 $${h##*.} ) ; do ping -c1 $${h%.*}.$$i && c=$$(($${c}+1)) ; done
+    cloud_location="cloud.region.zone$(( $$c % 3 ))"
     # add --join only if it is the fist start and not the first node
     if host ${COMPOSE_PROJECT_NAME}-yb-1 | grep " $(hostname -i)" || [ -f /root/var/conf/yugabyted.conf ]
     then # first node -----------------^
