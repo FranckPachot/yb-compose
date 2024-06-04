@@ -42,7 +42,10 @@ docker compose --env-file=.env.delay up -d
 The nodes are placed in region1, region2 and region 3
 You can create the following tablespaces:
 ```
+docker compose exec -it yb ysqlsh -h yb-compose-yb-1
+
 select * from yb_servers();
+
 create tablespace "region1" with ( replica_placement= $$
 { "num_replicas":1,"placement_blocks":[{ "cloud":"cloud","region":"region1","zone": "zone","min_num_replicas": 1 } ] }
 $$) ;
@@ -52,6 +55,15 @@ $$) ;
 create tablespace "region3" with ( replica_placement=$$
 { "num_replicas":1,"placement_blocks":[{ "cloud":"cloud","region":"region3","zone": "zone","min_num_replicas": 1 } ] }
 $$) ;
+
+create tablespace "pref1" with ( replica_placement=$$
+{ "num_replicas":3,"placement_blocks":[
+ { "cloud":"cloud","region":"region1","zone": "zone","min_num_replicas":1,"leader_preference":1 },
+ { "cloud":"cloud","region":"region2","zone": "zone","min_num_replicas":1,"leader_preference":2 },
+ { "cloud":"cloud","region":"region3","zone": "zone","min_num_replicas":1,"leader_preference":3 }
+] }
+$$) ;
+
 select * from pg_tablespace;
 
 ```
