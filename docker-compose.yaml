@@ -18,6 +18,7 @@ services:
      then
       # node 3 must be sure that node 2 is up (because it will change the RF)
       until postgres/bin/pg_isready -h ${COMPOSE_PROJECT_NAME}-yb-2 ; do sleep 1 ; done | uniq
+      yugabyted configure data_placement --constraint_value cloud.region1.zone:1,cloud.region2.zone:2,cloud.region3.zone:3
      fi
      cloud_location=cloud.region$$(ysqlsh -h yb-compose-yb-1 -tAc "select count(*)%3+1 from yb_servers()" ).zone
      yugabyted start --background=false --join=${COMPOSE_PROJECT_NAME}-yb-1 --cloud_location=$$cloud_location $$other_flags
