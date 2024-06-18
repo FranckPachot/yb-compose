@@ -3,7 +3,8 @@ Small Docker Compose to start a YugabyteDB lab with docker compose
 
 Start a RF3:
 ```
-docker compose up -d
+docker compose down
+docker compose up -d --scale yb=3 --no-recreate
 ```
 
 Connect to first node:
@@ -11,12 +12,10 @@ Connect to first node:
 docker compose exec -it yb ysqlsh -h yb-compose-yb-1
 ```
 
-Start a RF1 and then add 2 more nodes to be RF3 then add more nodes:
+add more nodes (one after the other as balances to regions by conting the existing ones):
 
 ```
-docker compose up yb -d --scale yb=1 --no-recreate
-docker compose up yb -d --scale yb=3 --no-recreate
-docker compose up yb -d --scale yb=6 --no-recreate
+for i in {4..6} ; do docker compose up -d --scale yb=$i --no-recreate ; done
 ```
 
 You can scale down, but one node at a time, waiting 15 minutes, as that's the default to re-create replicas. 
