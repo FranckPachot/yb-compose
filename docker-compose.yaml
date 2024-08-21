@@ -3,6 +3,9 @@ services:
   image: yugabytedb/yugabyte
   command: |
    bash -xc '
+    # if IP changes and socket file remains, we get an error
+    rm -rf /tmp/.yb*
+    # define flags from .env file
     other_flags="--tserver_flags=${TSERVER_FLAGS:-} --master_flags=${MASTER_FLAGS:-}"
     cloud_location=cloud.region1.zone
     # add --join only if it is the fist start and not the first node

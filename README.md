@@ -21,6 +21,8 @@ for i in {4..6} ; do docker compose up -d --scale yb=$i --no-recreate ; done
 You can scale down, but one node at a time, waiting 15 minutes, as that's the default to re-create replicas. 
 (Or blacklist the nodes before and wait for rebalance completion)
 
+Note: if you stop a container and start another one before re-starting it, docker will assign it another IP address and it will not work. The IP that was at container creation is set in configuration as the server identity. A database is stateful ;) 
+
 You can get the environment to connect to the exposed ports with:
 ```
 export PGLOADBALANCEHOSTS=random
