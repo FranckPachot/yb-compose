@@ -41,7 +41,7 @@ docker compose --env-file=.env.delay up -d
 The nodes are placed in region1, region2 and region 3
 You can create the following tablespaces:
 ```
-docker compose exec -it yb ysqlsh -h yb-compose-yb-1
+docker compose run -it pg psql -h yb-compose-yb-1
 
 select * from yb_servers();
 
