@@ -11,7 +11,7 @@ services:
     # add --join only if it is the fist start and not the first node
     if host ${COMPOSE_PROJECT_NAME}-yb-1 | grep " $(hostname -i)" || [ -f /root/var/conf/yugabyted.conf ]
     then # first node -----------------^
-     yugabyted start --cloud_location=$$cloud_location $$other_flags
+     yugabyted start --advertise_address=$$(hostname) --cloud_location=$$cloud_location $$other_flags
     else # other nodes
      # must be sure that node 1 to join is up
      until postgres/bin/pg_isready -h ${COMPOSE_PROJECT_NAME}-yb-1 ; do sleep 1 ; done | uniq
@@ -22,7 +22,7 @@ services:
       yugabyted configure data_placement --constraint_value cloud.region1.zone:1,cloud.region2.zone:2,cloud.region3.zone:3
      fi
      cloud_location=cloud.region$$(ysqlsh -h yb-compose-yb-1 -tAc "select count(*)%3+1 from yb_servers()" ).zone
-     yugabyted start --join=${COMPOSE_PROJECT_NAME}-yb-1 --cloud_location=$$cloud_location $$other_flags
+     yugabyted start --join=${COMPOSE_PROJECT_NAME}-yb-1 --advertise_address=$$(hostname) --cloud_location=$$cloud_location $$other_flags
     fi
     # add network delay to add to simulate distance between nodes
     echo "Adding delay ${NET_DELAY_MS:-0} * zone"
